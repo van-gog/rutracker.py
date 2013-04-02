@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-import optparse, urllib, urllib2, cookielib, os, re, Cookie, ConfigParser
+import optparse, urllib, urllib2, cookielib, os, re, Cookie, ConfigParser, sys
 
 _SCRIPT_PATH = os.path.realpath(__file__)
 
