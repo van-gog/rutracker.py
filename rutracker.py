@@ -86,7 +86,7 @@ class Tracker:
 
         self.__opener = urllib2.build_opener(
             urllib2.HTTPRedirectHandler(),
-            urllib2.HTTPHandler(debuglevel=1),
+            urllib2.HTTPHandler(debuglevel=0),
             urllib2.HTTPCookieProcessor(self.__cookieJar)
         )
 
