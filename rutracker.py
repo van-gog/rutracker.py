@@ -55,6 +55,9 @@ class Configuration:
 
     def get(self, section, name):
         return self.__config.get(section, name)
+    
+    def set(self, section, name, value):
+        self.__config.set(section, name, value)
 
     def save(self):
         with open(self._getConfigPath(), 'wb+') as configfile:
@@ -174,10 +177,11 @@ class Tracker:
                 self.__config.get('server', 'host'), 
                 self.__config.get('server', 'download_page') % str(topicId)
             ))
-        tFile = open(self.__config.get('script', 'torrents_dir') + os.sep + torrentName, 'wb')
+        torrentPath = self.__config.get('script', 'torrents_dir') + os.sep + torrentName
+        tFile = open(torrentPath, 'wb')
         tFile.write(response.read())
         tFile.close()
-        print "Torrent was saved as %s" % torrentName
+        print "Torrent was saved as %s" % torrentPath
 
 
 if __name__ == '__main__':
@@ -192,6 +196,7 @@ if __name__ == '__main__':
         parser.add_option("-u", "--username", action="store", dest="username", default=None, help="Your username")
         parser.add_option("-p", "--password", action="store", dest="password", default=None, help="Your password")
         parser.add_option("-i", "--input-file", action="store", dest="inputFile", default=None, help="File with topic ids")
+        parser.add_option("-o", "--output-dir", action="store", dest="outputFolder", default=None, help="Output folder to store torrent files")
 
         (o,args) = parser.parse_args()
 
@@ -205,12 +210,16 @@ if __name__ == '__main__':
             print "No username specified."
         elif (not o.inputFile is None) and (not os.path.exists(o.inputFile)):
             print "input file does not exists or unaccessable."
+        elif (not o.outputFolder is None) and (not os.path.exists(o.outputFolder)):
+            print "Output folder does not exists or unaccessable."
         else:
             if not o.username is None:
                 tracker.getConfig().getConfigParser().set('user', 'username', o.username)
             if not o.password is None:
                 tracker.getConfig().getConfigParser().set('user', 'password', o.password)
             tracker.getConfig().save()
+            if not o.outputFolder is None:
+                tracker.getConfig().set('script', 'torrents_dir', o.outputFolder)
 
             tracker.iterate(o.topic_id, o.inputFile);
 
