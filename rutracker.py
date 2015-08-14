@@ -21,7 +21,7 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
-import optparse, urllib, urllib2, cookielib, os, re, Cookie, ConfigParser, sys
+import optparse, urllib.request, urllib.parse, urllib.error, urllib.request, urllib.error, urllib.parse, http.cookiejar, os, re, http.cookies, configparser, sys
 
 _SCRIPT_PATH = os.path.realpath(__file__)
 
@@ -29,8 +29,10 @@ class Configuration:
     __config = None
 
     def __init__(self):
-        self.__config = ConfigParser.ConfigParser()
-        if not os.path.exists(self._getConfigPath()):
+        self.__config = configparser.ConfigParser(interpolation=None)
+        if os.path.exists(self._getConfigPath()) and self.__config.has_section('user'):
+            self.__config.read(self._getConfigPath())
+        else:
             self.__config.add_section('user')
             self.__config.add_section('server')
             self.__config.add_section('script')
@@ -50,8 +52,6 @@ class Configuration:
             self.__config.set('script', 'user_agent', 'Mozilla/5.0 (Macintosh; Intel Mac OS X 10_6_7)')
 
             self.save()
-        else:
-            self.__config.read(self._getConfigPath())
 
     def get(self, section, name):
         return self.__config.get(section, name)
@@ -60,7 +60,7 @@ class Configuration:
         self.__config.set(section, name, value)
 
     def save(self):
-        with open(self._getConfigPath(), 'wb+') as configfile:
+        with open(self._getConfigPath(), 'w') as configfile:
             self.__config.write(configfile)
 
     def getConfigParser(self):
@@ -83,14 +83,14 @@ class Tracker:
         else:
             self.__config = config
 
-        self.__cookieJar = cookielib.MozillaCookieJar(self.__config.get('script', 'cookie_file'))
+        self.__cookieJar = http.cookiejar.MozillaCookieJar(self.__config.get('script', 'cookie_file'))
         if os.path.exists(self.__config.get('script', 'cookie_file')):
             self.__cookieJar.load()
 
-        self.__opener = urllib2.build_opener(
-            urllib2.HTTPRedirectHandler(),
-            urllib2.HTTPHandler(debuglevel=0),
-            urllib2.HTTPCookieProcessor(self.__cookieJar)
+        self.__opener = urllib.request.build_opener(
+            urllib.request.HTTPRedirectHandler(),
+            urllib.request.HTTPHandler(debuglevel=0),
+            urllib.request.HTTPCookieProcessor(self.__cookieJar)
         )
 
         self.__opener.addheaders = [("User-Agent", self.__config.get('script', 'user_agent'))]
@@ -134,9 +134,9 @@ class Tracker:
     def login(self):
         response = self.__opener.open("http://%s%s" % (self.__config.get('server', 'host'), self.__config.get('server', 'home_page')));
         self.__cookieJar.save();
-
-        if (not self._authCheck(response.read())):
-            print "Try to login"
+               
+        if (not self._authCheck(response.read().decode('windows-1251'))):
+            print("Try to login")
             login_params = {
                 "login_username": self.__config.get('user', 'username'),
                 "login_password": self.__config.get('user', 'password'),
@@ -146,17 +146,17 @@ class Tracker:
                     self.__config.get('server', 'login_prefix'), 
                     self.__config.get('server', 'host'), 
                     self.__config.get('server', 'login_page')
-                ), urllib.urlencode(login_params))
+                ), urllib.parse.urlencode(login_params).encode('windows-1251'))
             self.__cookieJar.save();
-            if not self._authCheck(response.read()):
-                print "Could not login to server."
+            if not self._authCheck(response.read().decode('windows-1251')):
+                print("Could not login to server.")
                 sys.exit(2)
 
         return True
 
     def download(self, topicId):
         torrentName = "torrent[%s].torrent" % str(topicId);
-        cookie = cookielib.Cookie(version=0, name=self.__config.get('server', 'download_cookie'),
+        cookie = http.cookiejar.Cookie(version=0, name=self.__config.get('server', 'download_cookie'),
                               value=str(topicId),
                               port=None, port_specified=False,
                               domain='.%s' % self.__config.get('server', 'host'),
@@ -181,7 +181,7 @@ class Tracker:
         tFile = open(torrentPath, 'wb')
         tFile.write(response.read())
         tFile.close()
-        print "Torrent was saved as %s" % torrentPath
+        print("Torrent was saved as %s" % torrentPath)
 
 
 if __name__ == '__main__':
@@ -203,15 +203,15 @@ if __name__ == '__main__':
         tracker = Tracker()
 
         if (o.topic_id is None) and (o.inputFile is None):
-            print "No topic Id specified."
+            print("No topic Id specified.")
         elif (o.password is None) and (tracker.getConfig().get('user', 'password') == ''):
-            print "No password specified."
+            print("No password specified.")
         elif (o.username is None) and (tracker.getConfig().get('user', 'username') == ''):
-            print "No username specified."
+            print("No username specified.")
         elif (not o.inputFile is None) and (not os.path.exists(o.inputFile)):
-            print "input file does not exists or unaccessable."
+            print("input file does not exists or unaccessable.")
         elif (not o.outputFolder is None) and (not os.path.exists(o.outputFolder)):
-            print "Output folder does not exists or unaccessable."
+            print("Output folder does not exists or unaccessable.")
         else:
             if not o.username is None:
                 tracker.getConfig().getConfigParser().set('user', 'username', o.username)
@@ -224,4 +224,4 @@ if __name__ == '__main__':
             tracker.iterate(o.topic_id, o.inputFile);
 
     except Exception as e:
-        print str(e)
+        print(str(e))
