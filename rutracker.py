@@ -22,6 +22,7 @@ OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN
 THE SOFTWARE.
 """
 import optparse, urllib, urllib2, cookielib, os, re, Cookie, ConfigParser, sys
+from os.path import expanduser
 
 _SCRIPT_PATH = os.path.realpath(__file__)
 
@@ -60,14 +61,18 @@ class Configuration:
         self.__config.set(section, name, value)
 
     def save(self):
-        with open(self._getConfigPath(), 'wb+') as configfile:
-            self.__config.write(configfile)
+        configFile = os.fdopen(os.open(self._getConfigPath(), os.O_WRONLY | os.O_CREAT, 0600), 'w')
+        self.__config.write(configFile)
 
     def getConfigParser(self):
         return self.__config
 
     def _getConfigPath(self):
-        return os.path.join(os.path.dirname(_SCRIPT_PATH), "config.ini");
+        userHomeDir = expanduser('~');
+        baseConfigPath = userHomeDir + os.sep + '.rutracker'
+        if not os.path.exists(baseConfigPath):
+             os.makedirs(baseConfigPath, 0700);
+        return os.path.join(baseConfigPath, "config.ini");
 
     def reload(self):
         self.__config.read(self._getConfigPath())
@@ -183,13 +188,12 @@ class Tracker:
         tFile.close()
         print "Torrent was saved as %s" % torrentPath
 
-
-if __name__ == '__main__':
+def main():
     try:
         print("\n\tRuTracker Downloader - Download torrent files from RuTracker\n\n");
 
-        parser = optparse.OptionParser( usage = "Usage: %prog [options]\n\n" + 
-                                                "EXAMPLE:\n" + 
+        parser = optparse.OptionParser( usage = "Usage: %prog [options]\n\n" +
+                                                "EXAMPLE:\n" +
                                                 "\t%prog --topic topic_id --username yout-username --password your-password"
             )
         parser.add_option("-t", "--topic", action="store", dest="topic_id", default=None, help="Topic Id")
@@ -225,3 +229,6 @@ if __name__ == '__main__':
 
     except Exception as e:
         print str(e)
+
+if __name__ == '__main__' :
+    main()
